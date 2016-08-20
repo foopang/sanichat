@@ -1,5 +1,5 @@
 {
-  "firebase": "sanichat",
+  "firebase": "sanichat-3abb4",
   "public": ".",
   "ignore": [
     "firebase.json",

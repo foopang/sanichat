@@ -1,8 +1,8 @@
 <html>
     <head>
         <title>Sanitized Chat App</title>
-        <script src="https://cdn.firebase.com/js/client/2.2.4/firebase.js"></script>
-        <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+        <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase.js"></script>
+          <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
         <link rel="stylesheet" href="./main.css"></link>
     </head>
 
@@ -21,32 +21,42 @@
 
         <script>
         //STEP 1: Create references
-        var ref = new Firebase('https://sanichat.firebaseio.com/');
-        var usersRef = ref.child('users');
-        var messagesRef = ref.child('messages');
-        var queueRef = ref.child('queue');
+        var app = firebase.initializeApp({
+            apiKey: "AIzaSyCrQYWZ1yqx0mKtztAU4Rp63HAmFq5mDzI",
+            authDomain: "sanichat-3abb4.firebaseapp.com",
+            databaseURL: "https://sanichat-3abb4.firebaseio.com",
+            storageBucket: "sanichat-3abb4.appspot.com",
+        });
+
+        var db = app.database();
+        var usersRef = db.ref('users');
+        var messagesRef = db.ref('messages');
+        var queueRef = db.ref('queue/tasks');
 
         var currentUser = null;
 
         //STEP 2: Authenticate on button click
+        var auth = firebase.auth();
+        var provider = new firebase.auth.TwitterAuthProvider();
         $('#login').on('click', function () {
-            usersRef.authWithOAuthPopup('twitter', function (error, user) {
-                if (error) {
-                    console.log(error);
-                } else if (user) {
-                   usersRef.child(user.uid).set({username: user.twitter.username, pic: user.twitter.cachedUserProfile.profile_image_url_https});
-                }
+            auth.signInWithPopup(provider).then(function(result) {
+                var user = result.user;
+                currentUser = user;
+                db.ref('users/' + user.uid).set({username: user.displayName, pic: user.photoURL});
+            }).catch(function(error) {
+                console.log(error);
             });
         });
 
         //STEP 3: Handle auth state change
-        usersRef.onAuth(function(user){
-            if (user) {
-                currentUser = user;
-            } else {
-                currentUser = null;
-            }
-        });
+        /* usersRef.onAuth(function(user){
+           if (user) {
+           currentUser = user;
+           } else {
+           currentUser = null;
+           }
+           });
+         */
 
         //STEP 4: Add user image
         usersRef.on('child_added', function(snapshot){
@@ -57,8 +67,8 @@
         //STEP 5: Store messages in Firebase
         $('#tweet-submit').on('click', function () {
             if (currentUser !== null) {
-            var message = $('#msgInput').val();            
-            queueRef.push({user: currentUser.uid, username: currentUser.twitter.username, message: message, published: new Date().getTime()});
+            var message = $('#msgInput').val();
+            queueRef.push({user: currentUser.uid, username: currentUser.displayName, message: message, published: new Date().getTime()});
             $('#msgInput').val('');
           } else {
             alert('You must login with Twitter to post!');
